@@ -1,9 +1,14 @@
 use clap::{Command, Arg};
+use dotenv::dotenv;
+use reqwest;
+use serde_json::Value;
+use std::env;
 use std::net::IpAddr;
 use tokio;
 
 #[tokio::main]
 async fn main() {
+    dotenv().ok(); // Load environment variables from .env file
     let matches = Command::new("IP Reputation CLI")
         .version("1.0")
         .author("Your Name <your_email@example.com>")
@@ -17,12 +22,46 @@ async fn main() {
     let ip_str = matches.get_one::<String>("IP").expect("IP argument missing");
     let ip: IpAddr = ip_str.parse().expect("Invalid IP address");
 
-    let score = get_reputation_score(ip).await;
-    println!("Reputation score for {}: {}", ip, score);
+    let response = get_geolocation_data(&ip).await.unwrap_or_else(|_| {
+        eprintln!("Failed to retrieve geolocation data");
+        std::process::exit(1);
+    });
+
+    if let Some(city) = response["city"]["names"]["en"].as_str() {
+        println!("City: {}", city);
+    }
+    if let Some(country) = response["country"]["names"]["en"].as_str() {
+        println!("Country: {}", country);
+    }
+    if let Some(continent) = response["continent"]["names"]["en"].as_str() {
+        println!("Continent: {}", continent);
+    }
+    if let Some(subdivisions) = response["subdivisions"].as_array() {
+        for subdivision in subdivisions {
+            if let Some(sub_name) = subdivision["names"]["en"].as_str() {
+                println!("Subdivision: {}", sub_name);
+            }
+        }
+    }
+    if let Some(traits) = response["traits"].as_object() {
+        println!("{:#?}", traits);
+    }
 }
 
-async fn get_reputation_score(ip: IpAddr) -> i32 {
-    // Placeholder for the real implementation
-    println!("Checking reputation for {}", ip);
-    100
+async fn get_geolocation_data(ip: &IpAddr) -> Result<Value, reqwest::Error> {
+    let account_id = env::var("GEOIP2_ACCOUNT_ID").expect("GEOIP2_ACCOUNT_ID not set in .env file");
+    let license_key = env::var("GEOIP2_LICENSE_KEY").expect("GEOIP2_LICENSE_KEY not set in .env file");
+
+    let url = format!("https://geolite.info/geoip/v2.1/city/{}?pretty", ip);
+    let client = reqwest::Client::new();
+
+    let res = client
+        .get(url)
+        .basic_auth(account_id, Some(license_key))
+        .send()
+        .await?
+        .json::<Value>()
+        .await;
+
+    res
 }
