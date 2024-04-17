@@ -19,12 +19,13 @@ The CLI allows grabbing data from multiple sources.
 
 #### Services not yet integrated into the CLI
 
-2. **[IP2Location Database:](https://www.ip2location.com/)** Offers geolocation data including country, region, city, latitude, longitude, ZIP code, timezone, and more.
+1. **[IP2Location Database:](https://www.ip2location.com/)** Offers geolocation data including country, region, city, latitude, longitude, ZIP code, timezone, etc
    - No free tier is offered, and the pricing is expensive, starting at [$980 per year](https://www.ip2location.com/buy-online)
    - The secondary service is the IP2Proxy Database. This is significantly more expensive, starting at $7980
-3. **IPinfo.io API:** Offers geolocation data including country, region, city, postal code, latitude, longitude, and more via an API.
-4. **ipapi.com API:** Provides geolocation data along with ASN, ISP, country, city, and more.
-5. **FreeGeoIP API:** A free API to lookup geolocation data of an IP address.
+2. **ipapi.com API:** Provides geolocation data along with ASN, ISP, country, city, etc.
+   - Free tier is only 100 requests per month
+   - Signup for this tier requires a credit card
+3. **FreeGeoIP API:** A free API to lookup geolocation data of an IP address.
 
 ### IP Reputation Data Sources:
 
