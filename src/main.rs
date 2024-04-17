@@ -1,5 +1,6 @@
-use clap::{Command, Arg};
+use clap::{Arg, Command};
 use dotenv::dotenv;
+use ipinfo::{IpInfo, IpInfoConfig};
 use reqwest;
 use serde_json::Value;
 use std::env;
@@ -9,20 +10,34 @@ use tokio;
 #[tokio::main]
 async fn main() {
     dotenv().ok(); // Load environment variables from .env file
+
+    let ip = parse_command_line_arguments();
+    retrieve_and_print_geoip2_data(&ip).await;
+    perform_ipinfo_lookup(&ip).await;
+}
+
+fn parse_command_line_arguments() -> IpAddr {
     let matches = Command::new("IP Reputation CLI")
         .version("1.0")
         .author("Your Name <your_email@example.com>")
         .about("Checks the reputation of an IP address")
-        .arg(Arg::new("IP")
-            .help("The IP address to check")
-            .required(true)
-            .index(1))
+        .arg(
+            Arg::new("IP")
+                .help("The IP address to check")
+                .required(true)
+                .index(1),
+        )
         .get_matches();
 
-    let ip_str = matches.get_one::<String>("IP").expect("IP argument missing");
-    let ip: IpAddr = ip_str.parse().expect("Invalid IP address");
+    matches
+        .get_one::<String>("IP")
+        .expect("IP argument missing")
+        .parse()
+        .expect("Invalid IP address")
+}
 
-    match get_geoip2_data(&ip).await {
+async fn retrieve_and_print_geoip2_data(ip: &IpAddr) {
+    match get_geoip2_data(ip).await {
         Ok(response) => print_geoip2_data(&response),
         Err(e) => {
             eprintln!("Failed to retrieve geolocation data: {}", e);
@@ -31,14 +46,27 @@ async fn main() {
     }
 }
 
+async fn perform_ipinfo_lookup(ip: &IpAddr) {
+    let ipinfo_token = env::var("IP_INFO_TOKEN").expect("IP_INFO_TOKEN not set in .env file");
+    let config = IpInfoConfig {
+        token: Some(ipinfo_token),
+        ..Default::default()
+    };
+    let mut ipinfo = IpInfo::new(config).expect("Failed to construct IpInfo");
+
+    match ipinfo.lookup(&ip.to_string()).await {
+        Ok(result) => println!("{} lookup result: {:?}", ip, result),
+        Err(e) => println!("Error occurred: {}", e),
+    }
+}
 
 async fn get_geoip2_data(ip: &IpAddr) -> Result<Value, reqwest::Error> {
     let account_id = env::var("GEOIP2_ACCOUNT_ID").expect("GEOIP2_ACCOUNT_ID not set in .env file");
-    let license_key = env::var("GEOIP2_LICENSE_KEY").expect("GEOIP2_LICENSE_KEY not set in .env file");
+    let license_key =
+        env::var("GEOIP2_LICENSE_KEY").expect("GEOIP2_LICENSE_KEY not set in .env file");
 
     let url = format!("https://geolite.info/geoip/v2.1/city/{}?pretty", ip);
     let client = reqwest::Client::new();
-
     client
         .get(url)
         .basic_auth(account_id, Some(license_key))
@@ -47,7 +75,6 @@ async fn get_geoip2_data(ip: &IpAddr) -> Result<Value, reqwest::Error> {
         .json::<Value>()
         .await
 }
-
 
 fn print_geoip2_data(response: &Value) {
     if let Some(city) = response["city"]["names"]["en"].as_str() {
@@ -70,4 +97,3 @@ fn print_geoip2_data(response: &Value) {
         println!("{:#?}", traits);
     }
 }
-
