@@ -1,4 +1,5 @@
 mod ascii_banner;
+mod get_abuse_ipdb;
 mod get_freegeoip;
 mod get_geoip2;
 mod get_ipinfo;
@@ -6,6 +7,7 @@ mod get_ipinfo;
 use ascii_banner::print_ascii_art;
 use clap::{Arg, Command};
 use dotenv::dotenv;
+use get_abuse_ipdb::display_ip_abuse_data;
 use get_freegeoip::display_freegeoip_data;
 use get_geoip2::display_geoip2_data;
 use get_ipinfo::display_ipinfo_data;
@@ -19,9 +21,15 @@ async fn main() {
 
     let ip = parse_command_line_arguments();
 
+    // Geolocation data
+
     display_geoip2_data(&ip).await;
     display_ipinfo_data(&ip).await;
     display_freegeoip_data(&ip).await;
+
+    // Reputational data
+
+    display_ip_abuse_data(&ip).await;
 }
 
 fn parse_command_line_arguments() -> IpAddr {
