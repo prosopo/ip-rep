@@ -9,11 +9,34 @@ use tokio;
 
 #[tokio::main]
 async fn main() {
+    print_ascii_art();
     dotenv().ok(); // Load environment variables from .env file
 
     let ip = parse_command_line_arguments();
     retrieve_and_print_geoip2_data(&ip).await;
     perform_ipinfo_lookup(&ip).await;
+}
+
+fn print_ascii_art() {
+    println!(
+        r"
+------------------------------------------------------
+_____                                   _____ _____   
+|  __ \                                 |_   _|  __ \  
+| |__) | __ ___  ___  ___  _ __   ___     | | | |__) | 
+|  ___/ '__/ _ \/ __|/ _ \| '_ \ / _ \    | | |  ___/  
+| |   | | | (_) \__ \ (_) | |_) | (_) |  _| |_| |      
+|_|   |_|  \___/|___/\___/| .__/ \___/  |_____|_|      
+    /\               | |  | |                          
+   /  \   _ __   __ _| |_ |_| _______ _ __             
+  / /\ \ | '_ \ / _` | | | | |_  / _ \ '__|            
+ / ____ \| | | | (_| | | |_| |/ /  __/ |               
+/_/    \_\_| |_|\__,_|_|\__, /___\___|_|               
+                         __/ |                         
+                        |___/   
+------------------------------------------------------                       
+"
+    );
 }
 
 fn parse_command_line_arguments() -> IpAddr {
